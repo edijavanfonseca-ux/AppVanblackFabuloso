@@ -1,0 +1,412 @@
+from pathlib import Path
+
+base = Path("/mnt/data")
+
+index_html = r"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SoundCalc Pro</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: linear-gradient(135deg, #111827 0%, #311042 100%);
+    color: #fff;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 100px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 100px);
+    pointer-events: none;
+    animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(100px, 100px); }
+}
+
+header {
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, #d6b4fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+header p {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+main {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.card {
+    background: rgba(20, 20, 25, 0.85);
+    backdrop-filter: blur(12px);
+    padding: 25px;
+    border-radius: 16px;
+    margin-top: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.card h3 {
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #b39ddb;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    color: #b0bec5;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+input, select, button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(10,10,12,0.7);
+    color: white;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #90caf9;
+    box-shadow: 0 0 10px rgba(144,202,249,0.2);
+}
+
+button {
+    background: linear-gradient(135deg, #7e57c2, #651fff);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 10px;
+    box-shadow: 0 4px 15px rgba(101,31,255,0.3);
+}
+
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(101,31,255,0.5);
+}
+
+.resultado-item {
+    padding: 12px 16px;
+    margin: 8px 0;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border-left: 4px solid #7e57c2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.alerta-box {
+    padding: 12px 16px;
+    margin: 12px 0;
+    background: rgba(239, 83, 80, 0.1);
+    border: 1px solid rgba(239, 83, 80, 0.4);
+    border-radius: 8px;
+    font-size: 13px;
+    color: #ef5350;
+    line-height: 1.5;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.resultado-label {
+    font-weight: 500;
+    color: #b0b3b8;
+}
+
+.resultado-value {
+    font-weight: 700;
+    color: #fff;
+}
+
+.schema {
+    background: #09090b;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 13px;
+    margin-top: 15px;
+    text-align: center;
+    border: 1px solid #7e57c2;
+    color: #e2e8f0;
+}
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4caf50;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+</style>
+</head>
+<body>
+<header>
+<h2>🔊 SoundCalc Pro</h2>
+<p>Calculadora Avançada para Projetos de Som Automotivo</p>
+</header>
+<main>
+<div class="card">
+<h3>📊 Configuração do Sistema</h3>
+<div class="form-group">
+    <label>Marca do Alto-falante</label>
+    <input id="marca" placeholder="Ex: JBL, Eros, Hard Power...">
+</div>
+<div class="form-group">
+    <label>Modelo</label>
+    <input id="modelo" placeholder="Ex: ST450, Tornado 3000...">
+</div>
+<div class="form-group">
+    <label>Tipo de Transdutor</label>
+    <select id="tipo" onchange="checarTipo()">
+        <option value="Woofer">🔉 Woofer</option>
+        <option value="Subwoofer">🔊 Subwoofer</option>
+        <option value="Médio">🎵 Médio Grosso / Cone Seco</option>
+        <option value="Driver">🎺 Driver Fenólico/Titânio</option>
+        <option value="Super Tweeter">✨ Super Tweeter</option>
+    </select>
+</div>
+<div id="avisoTweeter" class="alerta-box" style="display:none;">
+    ⚠️ <strong>Aviso Importante:</strong> Valores comerciais de Super Tweeters (ex: 300W) consideram cortes passivos em altas frequências. Para evitar a queima do reparo, esta calculadora computará os limites reais físicos da bobina (padrão de segurança de 25W RMS por unidade) no dimensionamento elétrico real e VRMS de trabalho.
+</div>
+<div class="form-group">
+    <label id="labelRms">Potência Informada por Falante (W RMS)</label>
+    <input id="rms" type="number" placeholder="Ex: 300" step="any">
+</div>
+<div class="form-group">
+    <label>Impedância Nominal de Cada Falante (Ω)</label>
+    <input id="ohms" type="number" placeholder="Ex: 8" step="any">
+</div>
+<div class="form-group">
+    <label>Quantidade de Alto-falantes</label>
+    <input id="qtd" type="number" placeholder="Quantidade" value="1" min="1">
+</div>
+<div class="form-group">
+    <label>Tipo de Associação/Ligação</label>
+    <select id="associacao">
+        <option value="paralelo">🔌 Paralelo (Une todos os + e todos os -)</option>
+        <option value="serie">🔗 Série (Une o + de um no - do outro)</option>
+    </select>
+</div>
+<button onclick="salvar()">💾 Calcular & Gerar Projeto</button>
+</div>
+
+<div class="card">
+<h3>📈 Resultados Técnicos do Acoplamento</h3>
+<div id="resultado">Escolha as configurações acima e clique em Calcular.</div>
+</div>
+</main>
+
+<div id="toast" class="toast">✅ Cálculos atualizados com sucesso!</div>
+
+<script>
+function checarTipo() {
+    const tipo = document.getElementById('tipo').value;
+    const aviso = document.getElementById('avisoTweeter');
+    const labelRms = document.getElementById('labelRms');
+    if(tipo === 'Super Tweeter') {
+        if(aviso) aviso.style.display = 'block';
+        if(labelRms) labelRms.innerText = "Potência Comercial de Caixa (W RMS) - Ex: 300";
+    } else {
+        if(aviso) aviso.style.display = 'none';
+        if(labelRms) labelRms.innerText = "Potência Informada por Falante (W RMS)";
+    }
+}
+
+function mostrarToast() {
+    const toast = document.getElementById('toast');
+    if(toast) {
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
+}
+
+function salvar(){
+    let marca = document.getElementById('marca').value || 'Genérico';
+    let modelo = document.getElementById('modelo').value || 'Padrão';
+    let rmsInformado = Number(document.getElementById('rms').value || 0);
+    let ohmsNominal = Number(document.getElementById('ohms').value || 0);
+    let qtd = Number(document.getElementById('qtd').value || 1);
+    let tipoLigacao = document.getElementById('associacao').value;
+    let tipo = document.getElementById('tipo').value;
+    
+    if(rmsInformado <= 0 || ohmsNominal <= 0 || qtd <= 0) {
+        document.getElementById('resultado').innerHTML = '<div class="alerta-box">⚠️ Por favor, informe valores maiores que zero para Potência, Impedância e Quantidade.</div>';
+        return;
+    }
+    
+    let rmsRealUnidade = rmsInformado;
+    let notaObservacao = "";
+    if(tipo === 'Super Tweeter') {
+        rmsRealUnidade = 25; 
+        notaObservacao = `<div class="alerta-box" style="background: rgba(144,202,249,0.1); border-color: rgba(144,202,249,0.3); color:#90caf9;">
+            💡 <strong>Cálculo Protegido:</strong> Reduzimos o valor de trabalho de ${rmsInformado}W para <strong>25W RMS reais por bobina</strong>. Isso garante o VRMS correto para não estourar o reparo do seu tweeter!
+        </div>`;
+    }
+    
+    let ohmsFinal = 0;
+    let textoLigacao = "";
+    if(tipoLigacao === 'paralelo') {
+        ohmsFinal = ohmsNominal / qtd;
+        textoLigacao = `AMP + ➔ Todos os ${qtd} Falantes (+)<br>AMP - ➔ Todos os ${qtd} Falantes (-)`;
+    } else {
+        ohmsFinal = ohmsNominal * qtd;
+        textoLigacao = `Ligação em Cadeia de Série (${qtd}x): + no - dos falantes subsequentes`;
+    }
+    
+    let potenciaTotalReal = rmsRealUnidade * qtd;
+    let vrms = Math.sqrt(potenciaTotalReal * ohmsFinal).toFixed(2);
+    let ampRecomendado = Math.round(potenciaTotalReal * 1.2);
+    let corrente = (vrms / ohmsFinal).toFixed(2);
+    
+    let corte = '';
+    let frequencias = '';
+    if(tipo === 'Subwoofer') { corte = 'HPF 20Hz / LPF 80Hz'; frequencias = '20 - 80 Hz'; }
+    if(tipo === 'Woofer') { corte = 'HPF 50Hz / LPF 250Hz'; frequencias = '50 - 250 Hz'; }
+    if(tipo === 'Médio') { corte = 'HPF 250Hz / LPF 1500Hz'; frequencias = '250 - 1500 Hz'; }
+    if(tipo === 'Driver') { corte = 'HPF 1500Hz / LPF 7000Hz'; frequencias = '1.5k - 7 kHz'; }
+    if(tipo === 'Super Tweeter') { corte = 'HPF 8000Hz ativo ou Capacitor 4.7uF'; frequencias = '8k - 20 kHz'; }
+    
+    let resultadoHTML = `
+        ${notaObservacao}
+        <div class="resultado-item">
+            <span class="resultado-label">📱 Componente:</span>
+            <span class="resultado-value">${marca} - ${modelo} (${tipo})</span>
+        </div>
+        <div class="resultado-item">
+            <span class="resultado-label">🔊 Qtd / Associação:</span>
+            <span class="resultado-value">${qtd}x em ${tipoLigacao.toUpperCase()}</span>
+        </div>
+        <div class="resultado-item">
+            <span class="resultado-label">📉 Impedância Final do Conjunto:</span>
+            <span class="resultado-value" style="color: #90caf9;">${ohmsFinal.toFixed(2)} Ω</span>
+        </div>
+        <div class="resultado-item">
+            <span class="resultado-label">💪 Potência Total Real (Bobinas):</span>
+            <span class="resultado-value">${potenciaTotalReal} W RMS</span>
+        </div>
+        <div class="resultado-item">
+            <span class="resultado-label">⚡ VRMS Alvo (Para alinhamento):</span>
+            <span class="resultado-value" style="color: #ffb74d;">${vrms} Volts RMS</span>
+        </div>
+        <div class="resultado-item">
+            <span class="resultado-label">🎛️ Amplificador Mínimo Recomendado:</span>
+            <span class="resultado-value">${ampRecomendado} W RMS em ${ohmsFinal.toFixed(2)}Ω</span>
+        </div>
+        <div class="resultado-item">
+            <span class="resultado-label">🔌 Corrente Máxima Estimada:</span>
+            <span class="resultado-value">${corrente} Amperes</span>
+        </div>
+        <div class="resultado-item">
+            <span class="resultado-label">📊 Corte de Frequência Seguro:</span>
+            <span class="resultado-value">${corte}</span>
+        </div>
+        
+        <div class="schema">
+            <strong>🔌 Esquema Técnico de Ligação:</strong><br>
+            ${textoLigacao}<br>
+            <span style="font-size: 11px; color: #a78bfa;">Resultado: Carga total de ${ohmsFinal.toFixed(2)}Ω no amplificador</span>
+        </div>
+    `;
+    
+    document.getElementById('resultado').innerHTML = resultadoHTML;
+    localStorage.setItem('ultimoProjeto', resultadoHTML);
+    mostrarToast();
+}
+
+window.onload = () => {
+    checarTipo(); // Garante o estado inicial correto ao carregar
+    let d = localStorage.getItem('ultimoProjeto');
+    if(d) document.getElementById('resultado').innerHTML = d;
+}
+</script>
+</body>
+</html>"""
+
+manifest = """{
+    "name": "SoundCalc Pro",
+    "short_name": "SoundCalc",
+    "description": "Calculadora profissional para sistemas de som",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#111827",
+    "theme_color": "#7e57c2",
+    "icons": []
+}"""
+
+sw = """self.addEventListener('install', event => { self.skipWaiting(); });
+self.addEventListener('fetch', event => { event.respondWith(fetch(event.request).catch(() => new Response('Offline'))); });"""
+
+# Atualizar arquivos no diretório de destino
+(base/"index.html").write_text(index_html, encoding="utf-8")
+(base/"manifest.json").write_text(manifest, encoding="utf-8")
+(base/"service-worker.js").write_text(sw, encoding="utf-8")
+
+print({"status": "✅ Corrigido com sucesso! Reinicie o preview do app."})
